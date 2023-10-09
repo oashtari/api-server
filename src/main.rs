@@ -50,8 +50,148 @@ enum Commands {
     },
 }
 
+async fn request(
+    url: hyper::Uri,
+    method: Method,
+    body: Option<String>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let client = Client::new();
+
+    let mut res = client
+        .request(
+            Request::builder()
+                .uri(url)
+                .method(method)
+                .header("Content-Type", "application/json")
+                .body(
+                    body.map(|s| Body::from(s))
+                        .unwrap_or_else(|| Body::empty()),
+                )?,
+        )
+        .await?;
+
+    let mut buf = Vec::new();
+    while let Some(next) = res.data().await {
+        let chunk = next?;
+        buf.extend_from_slice(&chunk);
+    }
+    let s = String::from_utf8(buf)?;
+
+    eprintln!("Status: {}", Paint::green(res.status()));
+    if res.headers().contains_key(CONTENT_TYPE) {
+        let content_type = res.headers()[CONTENT_TYPE].to_str()?;
+        eprintln!("Content-Type: {}", Paint::green(content_type));
+        if content_type.starts_with("application/json") {
+            println!("{}", &s.to_colored_json_auto()?);
+        } else {
+            println!("{}", &s);
+        }
+    } else {
+        println!("{}", &s);
+    }
+
+    Ok(())
+}
+// async fn request(
+//     url: hyper::Uri,
+//     method: Method,
+//     body: Option<String>,
+// ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+//     let client = Client::new();
+
+//     let mut res = client
+//         .request(
+//             Request::builder()
+//                 .uri(url)
+//                 .method(method)
+//                 .header("Content-Type", "application/json")
+//                 .body(body.map(|s| Body::from(s)))
+//                 .unwrap_or_else(|| Body::empty())?,
+//         )
+//         .await?;
+
+//     let mut buf = Vec::new();
+
+//     while let Some(next) = res.data().await {
+//         let chunk = next?;
+//         buf.extend_from_slice(&chunk);
+//     }
+
+//     let s = String::from_utf8(buf)?;
+
+//     eprintln!("Status: {}", Paint::green(res.status()));
+//     if res.headers().contains_key(CONTENT_TYPE) {
+//         let content_type = res.headers()[CONTENT_TYPE].to_str()?;
+//         eprintln!("Content-Type: {}", Paint::green(content_type));
+//         if content_type.starts_with("application/json") {
+//             println!("{}", &s.to_colored_json_auto()?);
+//         } else {
+//             println!("{}", &s);
+//         }
+//         else {
+//             println!("{}", &s);
+//         }
+//         Ok(())
+//     }
+
+// }
+
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let cli = Cli::parse();
+
+    let mut uri_builder = Uri::builder();
+
+    if let Some(scheme) = cli.url.scheme() {
+        uri_builder = uri_builder.scheme(scheme.clone());
+    }
+
+    if let Some(authority) = cli.url.authority() {
+        uri_builder = uri_builder.authority(authority.cloen());
+    }
+
+    match cli.command {
+        Commands::List => {
+            request(
+                uri_builder.path_and_query("/v1/todos").build()?;
+            )
+            .await
+        }
+        Commands::Delete { id } => {
+            request(
+                uri_builder.path_and_query(foamat!("/v1/todos/{}", id))
+                .build()?,
+                Method::DELETE,
+                None,
+            )
+            .await
+        }
+        Commands::Read { id } => {
+            request(
+                uri_builder.path_and_query(format!("/v1/todos/{}", id)).build()?,
+                Method::GET,
+                None,
+            )
+            .await
+        }
+        Commands::Create { body } => {
+            request(
+                uri_builder.path_and_query("/v1/todos").build()?,
+                Method::POST,
+                Some(json!({ "body": body }).to_string()),
+            )
+            .await
+        }
+        Commands::Update { id, body, completed } => {
+            request(
+            uri_builder.path_and_query(format!("/v1/todos/{}", id)).build()?,
+            Method::PUT,
+            Some(json!({"body":body,"completed":completed}).to_string()),
+        )
+        .await
+        }
+    }
     // Initializes the tracing and logging for our service and its dependencies.
     init_tracing();
 
