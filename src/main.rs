@@ -1,9 +1,54 @@
+use clap::{Parser, Subcommand};
+use colored_json::prelude::*;
+use hyper::{body::HttpBody as _, header::CONTENT_TYPE, Body, Client, Method, Request, Uri};
 use router::create_router;
+use serde_json::json;
+use yansi::Paint;
 
 mod api;
 mod error;
 mod router;
 mod todo;
+
+#[derive(Parser)]
+struct Cli {
+    /// Base URL of API service
+    url: hyper::Uri,
+
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// List all todos
+    List,
+    /// Create a new todo
+    Create {
+        /// The todo body
+        body: String,
+    },
+    /// Read a todo
+    Read {
+        /// The todo id
+        id: i64,
+    },
+    /// Update a todo
+    Update {
+        /// The todo id
+        id: i64,
+        /// The todo body
+        body: String,
+        /// Mark todo as completed
+        #[arg(short, long)]
+        completed: bool,
+    },
+    /// Delete a todo
+    Delete {
+        /// The todo id
+        id: i64,
+    },
+}
 
 #[tokio::main]
 async fn main() {
