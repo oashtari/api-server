@@ -1,3 +1,9 @@
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
+use sqlx::{query, query_as, SqlitePool};
+
+use crate::error::Error;
+
 // We’re deriving the Serialize trait from the serde crate, and sqlx::FromRow which allows us to get a Todo from a SQLx query.
 
 #[derive(Serialize, Clone, sqlx::FromRow)]
@@ -53,11 +59,11 @@ impl Todo {
     }
 
     pub async fn delete(dbpool: SqlitePool, id: i64) -> Result<(), Error> {
-        query("delete from todo where id = ?")
+        query("delete from todos where id = ?")
             .bind(id)
             .execute(&dbpool)
             .await?;
-        Ok()
+        Ok(())
     }
 }
 

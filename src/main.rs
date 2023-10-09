@@ -1,3 +1,10 @@
+use router::create_router;
+
+mod api;
+mod error;
+mod router;
+mod todo;
+
 #[tokio::main]
 async fn main() {
     // Initializes the tracing and logging for our service and its dependencies.

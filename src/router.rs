@@ -1,7 +1,7 @@
 pub async fn create_router(dbpool: sqlx::Pool<sqlx::Sqlite>) -> axum::Router {
-    use create::api::{ping, todo_create, todo_delete, todo_list, todo_read, todo_update};
+    use crate::api::{ping, todo_create, todo_delete, todo_list, todo_read, todo_update};
 
-    use axum::{routing::Get, Router};
+    use axum::{routing::get, Router};
 
     use tower_http::cors::{Any, CorsLayer};
 
@@ -13,7 +13,7 @@ pub async fn create_router(dbpool: sqlx::Pool<sqlx::Sqlite>) -> axum::Router {
         .nest(
             "/v1",
             Router::new()
-                .route("/todos", get(todo_list).post(create_todo))
+                .route("/todos", get(todo_list).post(todo_create))
                 .route(
                     "/todos/:id",
                     get(todo_read).put(todo_update).delete(todo_delete),
